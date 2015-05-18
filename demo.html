@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title> InfoVis Project 2015</title>
+	<h1> Spring 2015 Information Visualization Course Project </h1>
+	<h2> Team: Luyan Dai, Siqi Deng, Hui Zhao </h2>
+	
+	<form>
+    <h3> Common Interests 1 <input type="range" id="thersholdSlider" name="points" value="0" min="1" max="20" onchange="threshold(100.0/this.value)"> 20 </h3>
+	</form>
+	<script type="text/javascript" src="http://mbostock.github.com/d3/d3.min.js"></script>
+	<script src="http://d3js.org/d3.v3.min.js"></script>
+	<script type='text/javascript' src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"> </script>
+	<script type='text/javascript' src="http://bost.ocks.org/mike/fisheye/fisheye.js?0.0.3"></script>
+	
+	<style> 
+
+	h1 {
+    	color: #1ABC9C;
+    	text-align:center;  
+    	font-size: 25px;
+    	font-family: "Helvetica";
+	}
+
+	h2 {
+    	color: #1ABC9C;
+    	text-align:center;  
+    	font-size: 18px;
+    	font-family: "Helvetica";
+	}
+
+	h3 {
+    	color: #1ABC9C;
+    	text-align:center;  
+    	font-style: italic;
+    	font-size: 14px;
+    	font-family: "Helvetica";
+	}
+
+	.node {
+  	stroke: #fff;
+  	stroke-width: 1.5px;
+	}
+
+	.link {
+  	stroke: #999;
+  	stroke-opacity: .6;
+	}
+
+
+text {
+  font: 10px sans-serif;
+  pointer-events: none;
+}
+
+	d3-tip {
+    	line-height: 1;
+    	color: black;
+	}
+
+
+td, th {
+    padding: 2px 4px;
+}
+
+th {
+    font-weight: bold;
+}
+	</style>
+	
+</head>
+
+
+<body onLoad="javascript:selectDataset('d_NYNJ')">
+<div id="container"></div>
+<script>
+
+function selectDataset(set) {
+  svg.selectAll("*").remove();
+  d3.selectAll("table").remove();
+  if(set == "d_NYNJ") {
+    drawNodes("./d3-NYNJ25_try.json");
+    file = "./d3-NYNJ25_intlist_use.csv"; 
+  }else if(set == "d_NYCA"){
+    drawNodes("./d3-NYCA25_try.json");
+    file = "./d3-NYCA25_intlist_use.csv";
+  }else if(set == "4cluster"){
+    drawNodes("./d3-0515_7pt6_try.json");
+    file = "./d3-0515_7pt6_intlist_use.csv"; 
+  }else {
+      drawNodes("./d3-0515_7pt_close_try.json");
+      file = "./d3-0515_7pt_close_intlist_use.csv"; 
+  };
+
+
+  d3.csv(file, function(data) {
+    // the columns you'd like to display
+    var columns = ["Order", "Topteninterests"];
+
+    var table = d3.select("#container").append("table"),
+        thead = table.append("thead"),
+        tbody = table.append("tbody");
+
+    // append the header row
+    thead.append("tr")
+        .selectAll("th")
+        .data(columns)
+        .enter()
+        .append("th")
+            .text(function(column) { return column; });
+
+    // create a row for each object in the data
+    var rows = tbody.selectAll("tr")
+        .data(data)
+        .enter()
+        .append("tr");
+
+    // create a cell in each row for each column
+    var cells = rows.selectAll("td")
+        .data(function(row) {
+            return columns.map(function(column) {
+                return {column: column, value: row[column]};
+            });
+        })
+        .enter()
+        .append("td")
+            .text(function(d) { return d.value; });
+            
+   return table;
+});
+};
+
+
+</script>
+
+<select onChange="javascript:selectDataset(this.value)">
+    <option value="d_NYNJ"> Compare NY & NJ </option>
+    <option value="d_NYCA"> Compare NY & CA </option>
+    <option value="4cluster"> Non related topics </option>
+    <option value="b"> Related Topics </option>
+</select>
+
+
+</svg>
+
+
+<script>
+//===================================== Main Script ====================================//
+
+//Constants for the SVG
+var margin = {top: 10, right: 10, bottom: 10, left: 10},
+    width = 1150 - margin.left - margin.right,
+    height = 950 - margin.top - margin.bottom
+    radius = 10;
+
+
+//Set up the colour scale
+var color = d3.scale.category10();
+
+var fill = d3.scale.category10();
+
+//Set up the force layout
+var force = d3.layout.force()
+	.gravity(.05)
+    .charge(-500)
+    .size([width, height])  
+    .start();
+    
+//Append a SVG to the body of the html page. Assign this SVG as an object to SVG
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom);
+
+var node;
+var link;
+var graph;
+var graphRec;
+
+function drawNodes(file) {
+
+  d3.json(file, function(error, data) {
+
+  
+  if (error) return console.error(error);
+  graph = data
+  graph.links.forEach(function(link, index, list) {
+        if (typeof graph.nodes[link.source] === 'undefined') {
+            console.log('undefined source', link);
+        }
+        if (typeof graph.nodes[link.target] === 'undefined') {
+            console.log('undefined target', link);
+        }
+    });
+  graphRec = JSON.parse(JSON.stringify(data))
+  force
+  	.nodes(graph.nodes)
+  	.links(graph.links)
+  	.on("tick", tick);
+
+  force.linkDistance(function(d) { return d.value^8+300; });
+  force.start();
+
+  //Create all the line svgs but without locations yet
+    link = svg.selectAll("line.link")
+        .data(graph.links)
+        .enter().append("line")
+        .attr("class", "link")
+        .style("stroke", function(d) {return fill(d.state);});
+
+        
+    var gnodes = svg.selectAll('g.gnode')
+    .data(graph.nodes)
+    .enter()
+    .append('g')
+    .classed('gnode', true)
+    .call(force.drag); 
+    
+     node = gnodes.append("circle")
+    .data(graph.nodes)
+    .attr("class", "node")
+    .attr("r", function(d) {
+      return d.connect_to
+    })
+    .style("fill", function(d) { return color(d.group); })
+    .on('dblclick', connectedNodes);
+
+    var labels = gnodes.append("text")
+    .text(function(d) { return d.name; });
+  	
+    function tick() {
+
+     link.attr("x1", function(d) { return d.source.x; })
+         .attr("y1", function(d) { return d.source.y; })
+         .attr("x2", function(d) { return d.target.x; })
+         .attr("y2", function(d) { return d.target.y; });
+     
+     gnodes.attr("transform", function(d) { 
+     return 'translate(' + [d.x, d.y] + ')'; 
+    });
+    }
+
+  });
+}
+  function mouseover() {
+  d3.select(this).select("circle").transition()
+      .duration(750)
+      .attr("r", 16);
+}
+
+function mouseout() {
+  d3.select(this).select("circle").transition()
+      .duration(750)
+      .attr("r", 8);
+};
+
+//===================================== Main Script ====================================//
+
+
+
+//------------------------------- Define for Tooltip -----------------------------------//
+var tip = d3.tip()
+    .attr('class', 'd3-tip')
+    .offset([-10, 0])
+    .html(function (d) {
+    return d.common_interest + "";
+})
+svg.call(tip);
+//------------------------------- Define for Tooltip -----------------------------------//
+
+
+
+//--------------------------------- Adjust Threshold -----------------------------------//
+function threshold(thresh) {
+    graph.links.splice(0, graph.links.length);
+		for (var i = 0; i < graphRec.links.length; i++) {
+			if ( parseInt(graphRec.links[i].value) < parseInt(thresh)) {
+        graph.links.push(graphRec.links[i]);
+      }
+		}
+    console.log(graph)
+    restart();
+}
+//Restart the visualisation after any node and link changes
+function restart() {
+	link = link.data(graph.links);
+  link.exit().remove();
+  link.enter().append("line")
+        .attr("class", "link")
+        .style("stroke", function(d) {return fill(d.state);});
+	//link.enter().insert("line", ".node").attr("class", "link");
+	node = node.data(graph.nodes);
+  node.enter().append("circle")
+    .data(graph.nodes)
+    .attr("class", "node")
+    .attr("r", function(d) {
+      return d.connect_to
+    })
+    .style("fill", function(d) { return color(d.group); });
+	node.enter().insert("circle", ".cursor").attr("class", "node").attr("r", 5).call(force.drag);
+	force.start();
+}
+//--------------------------------- Adjust Threshold -----------------------------------//
+
+//------------------------------------ Fade effect -------------------------------------//
+
+
+//Toggle stores whether the highlighting is on
+var toggle = 0;
+
+//Create an array logging what is connected to what
+var linkedByIndex = {};
+for (i = 0; i < graph.nodes.length; i++) {
+    linkedByIndex[i + "," + i] = 1;
+};
+graph.links.forEach(function (d) {
+    linkedByIndex[d.source.index + "," + d.target.index] = 1;
+});
+
+//This function looks up whether a pair are neighbours  
+function neighboring(a, b) {
+    return linkedByIndex[a.index + "," + b.index];
+}
+
+function connectedNodes() {
+
+    if (toggle == 0) {
+        //Reduce the opacity of all but the neighbouring nodes
+        d = d3.select(this).node().__data__;
+        node.style("opacity", function (o) {
+            return neighboring(d, o) | neighboring(o, d) ? 1 : 0.1;
+        });
+        
+        link.style("opacity", function (o) {
+            return d.index==o.source.index | d.index==o.target.index ? 1 : 0.1;
+        });
+        
+        //Reduce the op
+        
+        toggle = 1;
+    } else {
+        //Put them back to opacity=1
+        node.style("opacity", 1);
+        link.style("opacity", 1);
+        toggle = 0;
+    }
+
+}
+
+//------------------------------------ Fade effect -------------------------------------//
+
+
+</script>
+</body>
+</html>
