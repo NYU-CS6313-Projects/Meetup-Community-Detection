@@ -8,7 +8,7 @@ Our visualization adopts a node link diagram with nodes representing Meetup memb
 
 All data comes from Meetup.com members' profiles.
 
-A live demo can be found [here](http://nyu-cs6313-projects.github.io/Meetup-Community-Detection/demo.html).
+A live demo can be found [here](http://nyu-cs6313-projects.github.io/Meetup-Community-Detection/master/demo.html).
 
 You can use the `deploy.sh` script to keep the `gh-pages` branch up-to-date.
 When forking this project be sure to update the link to the demo page in this file.
