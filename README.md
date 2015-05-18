@@ -10,6 +10,6 @@ All data comes from Meetup.com members' profiles.
 
 A live demo can be found [here](http://nyu-cs6313-projects.github.io/Meetup-Community-Detection/demo.html).
 
-A video can be found [here](www.dropbox.com/s/zxiga09f8ldq18k/viz_tool_Meetup_community_detection.mov?dl=0)
+A video can be found [here](http://www.dropbox.com/s/zxiga09f8ldq18k/viz_tool_Meetup_community_detection.mov?dl=0)
 
 
